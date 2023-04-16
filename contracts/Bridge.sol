@@ -11,6 +11,7 @@ import "./BridgeNFT.sol";
 contract Bridge is IERC721Receiver, ReentrancyGuard, Ownable {
     using Clones for BridgeNFT;
 
+    IERC20 payToken;
     address immutable implementation;
     uint256 public commissionERC20;
     uint256 public commissionCoin;
@@ -28,8 +29,7 @@ contract Bridge is IERC721Receiver, ReentrancyGuard, Ownable {
     event NFTSended(address holder, address tokenAddress, uint256 tokenId);
     event CommissionChanged(uint256 commissionERC20, uint256 commissionCoin);
     event SetAdmin(address admin, bool status);
-
-    IERC20 payToken;
+    event PayTokenChanged(address newPay);
 
     constructor(
         IERC20 _payToken,
@@ -48,7 +48,7 @@ contract Bridge is IERC721Receiver, ReentrancyGuard, Ownable {
         uint256 _tokenId
     ) external nonReentrant {
         if (commissionERC20 > 0) {
-            payToken.transferFrom(_msgSender(), address(this), commissionERC20);
+            payToken.transferFrom(msg.sender, address(this), commissionERC20);
         }
         change(_tokenAddress, _tokenId);
     }
@@ -119,6 +119,11 @@ contract Bridge is IERC721Receiver, ReentrancyGuard, Ownable {
         commissionERC20 = _commissionERC20;
         commissionCoin = _commissionCoin;
         emit CommissionChanged(_commissionERC20, _commissionCoin);
+    }
+
+    function changePayToken(address _newPay) external onlyAdmin {
+        payToken = IERC20(_newPay);
+        emit PayTokenChanged(_newPay);
     }
 
     function setAdmin(address _admin, bool _status) external onlyAdmin {
